@@ -3,8 +3,11 @@ from peft import PeftModel, PeftConfig
 from streamlit_chat import message
 import streamlit as st
 import os
+import torch
 os.environ["STREAMLIT_SERVER_ENABLE_FILE_WATCHER"] = "false"
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(page_title="AI Chatbot", page_icon="🤖", layout="wide")
@@ -27,7 +30,7 @@ def load_model_tokenizer():
 
     model = AutoModelForSeq2SeqLM.from_pretrained(base)
     tokenizer = AutoTokenizer.from_pretrained(base)
-    model = PeftModel.from_pretrained(model, peft_model_id).to("cpu")
+    model = PeftModel.from_pretrained(model, peft_model_id).to(device)
     model.eval()
     return model, tokenizer
 
@@ -38,7 +41,7 @@ model, tokenizer = load_model_tokenizer()
 
 
 def inference(prompt: str) -> str:
-    ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=256).input_ids.to("cpu")
+    ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=256).input_ids.to(device)
     outs = model.generate(input_ids=ids,  do_sample=True, top_p=0.9, max_length=256)
     return tokenizer.decode(outs[0], skip_special_tokens=True)
 
